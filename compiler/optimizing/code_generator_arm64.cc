@@ -5262,6 +5262,54 @@ void InstructionCodeGeneratorARM64::VisitNewArray(HNewArray* instruction) {
   CheckEntrypointTypes<kQuickAllocArrayResolved, void*, mirror::Class*, int32_t>();
 }
 
+void LocationsBuilderARM64::VisitTraceNewInstance(HTraceNewInstance* instruction ATTRIBUTE_UNUSED) { }
+void InstructionCodeGeneratorARM64::VisitTraceNewInstance(HTraceNewInstance* instruction ATTRIBUTE_UNUSED) {
+
+  LOG(INFO) << "[HT] [CodeGen] VisitTraceNewInstance()";
+
+  UseScratchRegisterScope temps(GetVIXLAssembler());
+  Register num = temps.AcquireX();
+
+  // num = tr->tlsptr_.num_obj_allocated;
+  __ Ldr(num, MemOperand(tr, Thread::NumObjAllocatedOffset<kArm64PointerSize>().Int32Value()));
+  // num ++;
+  __ Add(num, num, Operand(1));
+  // tr->tlsptr_.num_obj_allocated = num;
+  __ Str(num, MemOperand(tr, Thread::NumObjAllocatedOffset<kArm64PointerSize>().Int32Value()));
+}
+
+void LocationsBuilderARM64::VisitTraceInstanceFieldGet(art::HTraceInstanceFieldGet *instruction ATTRIBUTE_UNUSED) { }
+void InstructionCodeGeneratorARM64::VisitTraceInstanceFieldGet(art::HTraceInstanceFieldGet *instruction ATTRIBUTE_UNUSED) {
+
+  LOG(INFO) << "[HT] [CodeGen] VisitTraceInstanceFieldGet()";
+
+  UseScratchRegisterScope temps(GetVIXLAssembler());
+  Register num = temps.AcquireX();
+
+  // num_allocated_obj = tr->tlsptr_.num_iget;
+  __ Ldr(num, MemOperand(tr, Thread::NumIGetOffset<kArm64PointerSize>().Int32Value()));
+  // num;
+  __ Add(num, num, Operand(1));
+  // tr->tlsptr_.num_iget = num;
+  __ Str(num, MemOperand(tr, Thread::NumIGetOffset<kArm64PointerSize>().Int32Value()));
+}
+
+void LocationsBuilderARM64::VisitTraceInstanceFieldSet(art::HTraceInstanceFieldSet *instruction ATTRIBUTE_UNUSED) { }
+void InstructionCodeGeneratorARM64::VisitTraceInstanceFieldSet(art::HTraceInstanceFieldSet *instruction ATTRIBUTE_UNUSED) {
+
+  LOG(INFO) << "[HT] [CodeGen] VisitTraceInstanceFieldSet()";
+
+  UseScratchRegisterScope temps(GetVIXLAssembler());
+  Register num = temps.AcquireX();
+
+  // num_allocated_obj = tr->tlsptr_.num_iput;
+  __ Ldr(num, MemOperand(tr, Thread::NumIPutOffset<kArm64PointerSize>().Int32Value()));
+  // num;
+  __ Add(num, num, Operand(1));
+  // tr->tlsptr_.num_iput = num;
+  __ Str(num, MemOperand(tr, Thread::NumIPutOffset<kArm64PointerSize>().Int32Value()));
+}
+
 void LocationsBuilderARM64::VisitNewInstance(HNewInstance* instruction) {
   LocationSummary* locations =
       new (GetGraph()->GetArena()) LocationSummary(instruction, LocationSummary::kCallOnMainOnly);

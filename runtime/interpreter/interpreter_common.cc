@@ -38,6 +38,17 @@
 namespace art {
 namespace interpreter {
 
+ALWAYS_INLINE void LogInstanceFieldAccess(std::string name, const ShadowFrame& sf, ArtField* f, Thread* t)
+REQUIRES_SHARED(Locks::mutator_lock_)
+{
+  LOG(INFO) << "[HT] [" << name << "]"
+            << " ts=" << std::chrono::high_resolution_clock::now().time_since_epoch().count()
+            << ", method=" << sf.GetMethod()->GetName()
+            << ", field=" << f->GetName()
+            << ", iget=" << t->GetIGet()
+            << ", iput=" << t->GetIPut();
+}
+
 void ThrowNullPointerExceptionFromInterpreter() {
   ThrowNullPointerExceptionFromDexPC();
 }
@@ -64,6 +75,9 @@ bool DoFieldGet(Thread* self, ShadowFrame& shadow_frame, const Instruction* inst
       return false;
     }
   }
+
+  self->IGetIncrement();
+  LogInstanceFieldAccess("IGet", shadow_frame, f, self);
 
   JValue result;
   if (UNLIKELY(!DoFieldGetCommon<field_type>(self, shadow_frame, obj, f, &result))) {
@@ -145,6 +159,13 @@ bool DoIGetQuick(ShadowFrame& shadow_frame, const Instruction* inst, uint16_t in
     return false;
   }
   MemberOffset field_offset(inst->VRegC_22c());
+
+  auto t = Thread::Current();
+  t->IGetIncrement();
+  LogInstanceFieldAccess("IGet", shadow_frame,
+                         ArtField::FindInstanceFieldWithOffset(obj->GetClass(), field_offset.Uint32Value()),
+                         t);
+
   // Report this field access to instrumentation if needed. Since we only have the offset of
   // the field from the base of the object, we need to look for it first.
   instrumentation::Instrumentation* instrumentation = Runtime::Current()->GetInstrumentation();
@@ -269,6 +290,9 @@ bool DoFieldPut(Thread* self, const ShadowFrame& shadow_frame, const Instruction
     }
   }
 
+  self->IPutIncrement();
+  LogInstanceFieldAccess("IPut", shadow_frame, f, self);
+
   uint32_t vregA = is_static ? inst->VRegA_21c(inst_data) : inst->VRegA_22c(inst_data);
   JValue value = GetFieldValue<field_type>(shadow_frame, vregA);
   return DoFieldPutCommon<field_type, do_assignability_check, transaction_active>(self,
@@ -321,6 +345,13 @@ bool DoIPutQuick(const ShadowFrame& shadow_frame, const Instruction* inst, uint1
   }
   MemberOffset field_offset(inst->VRegC_22c());
   const uint32_t vregA = inst->VRegA_22c(inst_data);
+
+  auto t = Thread::Current();
+  t->IPutIncrement();
+  LogInstanceFieldAccess("IPut", shadow_frame,
+                         ArtField::FindInstanceFieldWithOffset(obj->GetClass(), field_offset.Uint32Value()),
+                         t);
+
   // Report this field modification to instrumentation if needed. Since we only have the offset of
   // the field from the base of the object, we need to look for it first.
   instrumentation::Instrumentation* instrumentation = Runtime::Current()->GetInstrumentation();
