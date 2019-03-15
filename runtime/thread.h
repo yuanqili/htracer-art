@@ -152,6 +152,14 @@ class Thread {
   static const size_t kStackOverflowImplicitCheckSize;
   static constexpr bool kVerifyStack = kIsDebugBuild;
 
+  ALWAYS_INLINE void ObjAllocatedIncrement() { tlsPtr_.num_obj_allocated++; }
+  ALWAYS_INLINE void IGetIncrement() { tlsPtr_.num_iget++; }
+  ALWAYS_INLINE void IPutIncrement() { tlsPtr_.num_iput++; }
+
+  ALWAYS_INLINE uint64_t GetObjAllocated() { return tlsPtr_.num_obj_allocated; }
+  ALWAYS_INLINE uint32_t GetIPut() { return tlsPtr_.num_iput; }
+  ALWAYS_INLINE uint32_t GetIGet() { return tlsPtr_.num_iget; }
+
   // Creates a new native thread corresponding to the given managed peer.
   // Used to implement Thread.start.
   static void CreateNativeThread(JNIEnv* env, jobject peer, size_t stack_size, bool daemon);
@@ -751,6 +759,21 @@ class Thread {
   static ThreadOffset<pointer_size> ThreadLocalAllocStackEndOffset() {
     return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values,
                                                                 thread_local_alloc_stack_end));
+  }
+
+  template<PointerSize pointer_size>
+  static ThreadOffset<pointer_size> NumObjAllocatedOffset() {
+    return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values, num_obj_allocated));
+  }
+
+  template<PointerSize pointer_size>
+  static ThreadOffset<pointer_size> NumIPutOffset() {
+    return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values, num_iput));
+  }
+
+  template<PointerSize pointer_size>
+  static ThreadOffset<pointer_size> NumIGetOffset() {
+    return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values, num_iget));
   }
 
   // Size of stack less any space reserved for stack overflow
@@ -1662,6 +1685,11 @@ class Thread {
 
     // Thread-local mark stack for the concurrent copying collector.
     gc::accounting::AtomicStack<mirror::Object>* thread_local_mark_stack;
+
+    uint64_t num_obj_allocated = 0;
+    uint64_t num_iget = 0;
+    uint64_t num_iput = 0;
+
   } tlsPtr_;
 
   // Guards the 'wait_monitor_' members.

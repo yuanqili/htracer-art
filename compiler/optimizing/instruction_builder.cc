@@ -980,6 +980,9 @@ HNewInstance* HInstructionBuilder::BuildNewInstance(dex::TypeIndex type_index, u
   // Consider classes we haven't resolved as potentially finalizable.
   bool finalizable = (klass == nullptr) || klass->IsFinalizable();
 
+  LOG(INFO) << "[HT] [InstructionBuilder] AppendInstruction(HTraceNewInstance())"
+            << ", klass.name=" << klass->GetName();
+  AppendInstruction(new (arena_) HTraceNewInstance);
   HNewInstance* new_instance = new (arena_) HNewInstance(
       cls,
       dex_pc,
@@ -1305,6 +1308,8 @@ bool HInstructionBuilder::BuildInstanceFieldAccess(const Instruction& instructio
                                                  *dex_file_,
                                                  dex_pc);
     }
+    LOG(INFO) << "[HT] [InstructionBuilder] AppendInstruction(HTraceInstanceFieldSet())";
+    AppendInstruction(new (arena_) HTraceInstanceFieldSet());
     AppendInstruction(field_set);
   } else {
     HInstruction* field_get = nullptr;
@@ -1326,6 +1331,8 @@ bool HInstructionBuilder::BuildInstanceFieldAccess(const Instruction& instructio
                                                  *dex_file_,
                                                  dex_pc);
     }
+    LOG(INFO) << "[HT] [InstructionBuilder] AppendInstruction(HTraceInstanceFieldGet())";
+    AppendInstruction(new (arena_) HTraceInstanceFieldGet());
     AppendInstruction(field_get);
     UpdateLocal(source_or_dest_reg, field_get);
   }
