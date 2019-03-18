@@ -42,7 +42,8 @@ ALWAYS_INLINE void LogInstanceFieldAccess(std::string name, const ShadowFrame& s
 REQUIRES_SHARED(Locks::mutator_lock_)
 {
   LOG(INFO) << "[HT] [" << name << "]"
-            << " ts=" << std::chrono::high_resolution_clock::now().time_since_epoch().count()
+            << " ts=" << std::chrono::seconds(std::time(nullptr)).count()
+            << ", tshres=" << std::chrono::high_resolution_clock::now().time_since_epoch().count()
             << ", method=" << sf.GetMethod()->GetName()
             << ", field=" << f->GetName()
             << ", iget=" << t->GetIGet()

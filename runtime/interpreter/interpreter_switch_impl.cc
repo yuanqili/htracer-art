@@ -571,9 +571,6 @@ JValue ExecuteSwitchImpl(Thread* self, const DexFile::CodeItem* code_item,
                                                          self,
                                                          false,
                                                          do_access_check);
-
-        LOG(INFO) << "[HT] [InterpreterSwitch] object_allocated"
-                  << " obj_name=" << c->GetName();
         self->ObjAllocatedIncrement();
 
         if (LIKELY(c != nullptr)) {
