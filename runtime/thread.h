@@ -152,13 +152,17 @@ class Thread {
   static const size_t kStackOverflowImplicitCheckSize;
   static constexpr bool kVerifyStack = kIsDebugBuild;
 
-  ALWAYS_INLINE void ObjAllocatedIncrement() { tlsPtr_.num_obj_allocated++; }
-  ALWAYS_INLINE void IGetIncrement() { tlsPtr_.num_iget++; }
-  ALWAYS_INLINE void IPutIncrement() { tlsPtr_.num_iput++; }
+  ALWAYS_INLINE void ObjAllocatedIncrement() { *tlsPtr_.num_obj_allocated_ptr = *tlsPtr_.num_obj_allocated_ptr + 1; }
+  ALWAYS_INLINE void IGetIncrement() { *tlsPtr_.num_iget_ptr = *tlsPtr_.num_iget_ptr + 1; }
+  ALWAYS_INLINE void IPutIncrement() { *tlsPtr_.num_iput_ptr = *tlsPtr_.num_iput_ptr + 1; }
 
   ALWAYS_INLINE uint64_t GetObjAllocated() { return tlsPtr_.num_obj_allocated; }
-  ALWAYS_INLINE uint32_t GetIPut() { return tlsPtr_.num_iput; }
-  ALWAYS_INLINE uint32_t GetIGet() { return tlsPtr_.num_iget; }
+  ALWAYS_INLINE uint64_t GetIPut() { return tlsPtr_.num_iput; }
+  ALWAYS_INLINE uint64_t GetIGet() { return tlsPtr_.num_iget; }
+
+  ALWAYS_INLINE uint64_t GetObjAllocatedPtr() { return *tlsPtr_.num_obj_allocated_ptr; }
+  ALWAYS_INLINE uint64_t GetIPutPtr() { return *tlsPtr_.num_iput_ptr; }
+  ALWAYS_INLINE uint64_t GetIGetPtr() { return *tlsPtr_.num_iget_ptr; }
 
   // Creates a new native thread corresponding to the given managed peer.
   // Used to implement Thread.start.
@@ -195,7 +199,7 @@ class Thread {
       REQUIRES_SHARED(Locks::mutator_lock_);
   static Thread* FromManagedThread(const ScopedObjectAccessAlreadyRunnable& ts, jobject thread)
       REQUIRES(Locks::thread_list_lock_, !Locks::thread_suspend_count_lock_)
-      REQUIRES_SHARED(Locks::mutator_lock_);
+      REQUIRES_SHARED(Locks::mutator_lock_);https://www.google.com/search?q=asha+house+address&stick=H4sIAAAAAAAAAOPgE-LWT9c3LEkrL8iwNNWSzU620s_JT04syczPgzOsElNSilKLixexCiUWZyQqZOSXFqcqQAUBOCNdRUMAAAA&ludocid=3425106262479601130&sa=X&ved=2ahUKEwiHovHTkI_hAhXjK30KHUOhBpwQ6BMwGHoECAkQAw
 
   // Translates 172 to pAllocArrayFromCode and so on.
   template<PointerSize size_of_pointers>
@@ -774,6 +778,21 @@ class Thread {
   template<PointerSize pointer_size>
   static ThreadOffset<pointer_size> NumIGetOffset() {
     return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values, num_iget));
+  }
+
+  template<PointerSize pointer_size>
+  static ThreadOffset<pointer_size> NumObjAllocatedPtrOffset() {
+    return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values, num_obj_allocated_ptr));
+  }
+
+  template<PointerSize pointer_size>
+  static ThreadOffset<pointer_size> NumIPutPtrOffset() {
+    return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values, num_iput_ptr));
+  }
+
+  template<PointerSize pointer_size>
+  static ThreadOffset<pointer_size> NumIGetPtrOffset() {
+    return ThreadOffsetFromTlsPtr<pointer_size>(OFFSETOF_MEMBER(tls_ptr_sized_values, num_iget_ptr));
   }
 
   // Size of stack less any space reserved for stack overflow
@@ -1689,6 +1708,10 @@ class Thread {
     uint64_t num_obj_allocated = 0;
     uint64_t num_iget = 0;
     uint64_t num_iput = 0;
+
+    uint64_t* num_obj_allocated_ptr = new uint64_t(0);
+    uint64_t* num_iget_ptr = new uint64_t(0);
+    uint64_t* num_iput_ptr = new uint64_t(0);
 
   } tlsPtr_;
 
